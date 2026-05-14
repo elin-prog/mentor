@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MentorHub — 멘토링 대시보드 (Google Sheets)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="loginScreen" class="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-icon lg"><i class="bi bi-layers-half"></i></div>
+      <h1 class="login-title">MentorHub</h1>
+      <p class="login-subtitle">멘토링 프로젝트 관리 플랫폼</p>
+    </div>
+    <div id="loginAlert" class="auth-alert" style="display:none"></div>
+    <div class="login-form">
+      <div class="field-group">
+        <label class="field-label">이메일</label>
+        <div class="field-wrap">
+          <i class="bi bi-envelope field-icon"></i>
+          <input id="loginEmail" type="email" class="field-input" placeholder="your@email.com" autocomplete="email" />
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">비밀번호</label>
+        <div class="field-wrap">
+          <i class="bi bi-lock field-icon"></i>
+          <input id="loginPassword" type="password" class="field-input" placeholder="••••••••" autocomplete="current-password" />
+          <button class="field-eye" id="togglePw" tabindex="-1" type="button"><i class="bi bi-eye"></i></button>
+        </div>
+      </div>
+      <button id="loginBtn" class="btn-primary-full">
+        <span id="loginBtnText">로그인</span>
+        <span id="loginSpinner" class="btn-spinner" style="display:none"><i class="bi bi-arrow-repeat spin"></i></span>
+      </button>
+    </div>
+    <div class="demo-shortcuts">
+      <p class="demo-label">구글 시트 등록 계정으로 로그인</p>
+      <div class="demo-btns">
+        <button class="demo-btn" data-email="mentor@demo.com" data-pw="demo1234" data-role="mentor"><i class="bi bi-person-badge"></i> 멘토 계정</button>
+        <button class="demo-btn" data-email="mentee@demo.com" data-pw="demo1234" data-role="mentee"><i class="bi bi-person"></i> 멘티 계정</button>
+      </div>
+    </div>
+    <p class="login-footer">계정이 없으신가요? <button class="link-btn" id="showSignupBtn">회원가입</button></p>
+  </div>
+</div>
+
+<!-- ═══ SIGNUP MODAL ═══ -->
+<div id="signupModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title">회원가입</h5>
+      <button class="modal-close" id="closeSignup"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div id="signupAlert" class="auth-alert" style="display:none"></div>
+    <div class="field-group"><label class="field-label">이름</label><div class="field-wrap"><i class="bi bi-person field-icon"></i><input id="signupName" type="text" class="field-input" placeholder="홍길동" /></div></div>
+    <div class="field-group"><label class="field-label">이메일</label><div class="field-wrap"><i class="bi bi-envelope field-icon"></i><input id="signupEmail" type="email" class="field-input" placeholder="your@email.com" /></div></div>
+    <div class="field-group"><label class="field-label">비밀번호</label><div class="field-wrap"><i class="bi bi-lock field-icon"></i><input id="signupPassword" type="password" class="field-input" placeholder="••••••••" /></div></div>
+    <div class="field-group">
+      <label class="field-label">역할</label>
+      <div class="role-select-group"><label class="role-opt"><input type="radio" name="signupRole" value="mentee" checked /> 멘티</label><label class="role-opt"><input type="radio" name="signupRole" value="mentor" /> 멘토</label></div>
+    </div>
+    <button id="signupSubmitBtn" class="btn-primary-full mt-2"><span id="signupBtnText">가입하기</span><span id="signupSpinner" style="display:none"><i class="bi bi-arrow-repeat spin"></i></span></button>
+  </div>
+</div>
+
+<!-- ═══ TASK CREATE MODAL ═══ -->
+<div id="taskCreateModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title"><i class="bi bi-plus-circle"></i> 새 과제 등록</h5>
+      <button class="modal-close" id="closeTaskCreate"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div id="taskCreateAlert" class="auth-alert" style="display:none"></div>
+    <div class="field-group"><label class="field-label">과제 제목 <span class="req">*</span></label><div class="field-wrap"><i class="bi bi-pencil field-icon"></i><input id="taskCreateTitle" type="text" class="field-input" placeholder="과제 제목을 입력하세요" /></div></div>
+    <div class="field-group"><label class="field-label">설명</label><textarea id="taskCreateDesc" class="field-textarea" rows="3" placeholder="과제 내용을 입력하세요"></textarea></div>
+    <div class="field-group"><label class="field-label">마감일</label><div class="field-wrap"><i class="bi bi-calendar3 field-icon"></i><input id="taskCreateDue" type="date" class="field-input" /></div></div>
+    <div class="form-actions"><button id="taskCreateSubmit" class="btn-submit"><span id="taskCreateText">등록하기</span><span id="taskCreateSpinner" style="display:none"><i class="bi bi-arrow-repeat spin"></i></span></button></div>
+  </div>
+</div>
+
+<!-- ═══ FEEDBACK MODAL ═══ -->
+<div id="feedbackModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title"><i class="bi bi-chat-quote"></i> 피드백 작성</h5>
+      <button class="modal-close" id="closeFeedback"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <p id="feedbackTaskTitle" class="modal-sub-label"></p>
+    <div class="field-group"><label class="field-label">피드백 내용 <span class="req">*</span></label><textarea id="feedbackContent" class="field-textarea" rows="4" placeholder="멘티에게 전달할 피드백을 작성하세요"></textarea></div>
+    <div class="form-actions"><button id="feedbackSubmit" class="btn-submit" data-task-id=""><span>저장하기</span><span id="feedbackSpinner" style="display:none"><i class="bi bi-arrow-repeat spin"></i></span></button></div>
+  </div>
+</div>
+
+<!-- ═══ NOTICE DETAIL MODAL ═══ -->
+<div id="noticeDetailModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box wide">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title" id="noticeDetailTitle">—</h5>
+      <button class="modal-close" id="closeNoticeDetail"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="notice-detail-meta" id="noticeDetailMeta"></div>
+    <div class="notice-detail-body" id="noticeDetailBody"></div>
+  </div>
+</div>
+
+<!-- ═══ CHAT MESSAGE MODAL ═══ -->
+<div id="chatModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box wide">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title"><i class="bi bi-chat-dots"></i> 멘토 채팅</h5>
+      <button class="modal-close" id="closeChatModal"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="chat-window" id="chatWindow">
+      <div class="chat-msg received"><div class="chat-bubble">안녕하세요! 과제 관련해서 궁금한 점 있으면 언제든지 물어보세요 😊</div><span class="chat-time">10:30</span></div>
+      <div class="chat-msg sent"><div class="chat-bubble">감사합니다! React 컴포넌트 분리할 때 기준이 궁금해요.</div><span class="chat-time">10:32</span></div>
+      <div class="chat-msg received"><div class="chat-bubble">단일 책임 원칙을 기준으로 — 한 컴포넌트가 하나의 역할만 하도록 나누면 됩니다. 재사용 가능한지도 같이 고려해 보세요!</div><span class="chat-time">10:35</span></div>
+    </div>
+    <div class="chat-input-wrap">
+      <input type="text" id="chatInput" class="chat-input" placeholder="메시지를 입력하세요..." />
+      <button id="chatSendBtn" class="chat-send-btn"><i class="bi bi-send-fill"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FILE UPLOAD MODAL ═══ -->
+<div id="fileUploadModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title"><i class="bi bi-cloud-upload"></i> 파일 업로드</h5>
+      <button class="modal-close" id="closeFileUpload"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="upload-drop-zone" id="uploadDropZone">
+      <i class="bi bi-cloud-arrow-up upload-icon"></i>
+      <p class="upload-text">파일을 드래그하거나 클릭해서 선택하세요</p>
+      <p class="upload-sub">PDF, DOCX, PPTX, ZIP (최대 20MB)</p>
+      <input type="file" id="fileInput" style="display:none" multiple />
+    </div>
+    <div id="uploadFileList" class="upload-file-list" style="display:none"></div>
+    <div class="form-actions"><button id="uploadConfirmBtn" class="btn-submit" disabled><i class="bi bi-upload"></i> 업로드</button></div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE MODAL ═══ -->
+<div id="profileModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title"><i class="bi bi-person-circle"></i> 내 프로필</h5>
+      <button class="modal-close" id="closeProfile"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="profile-modal-body">
+      <div class="profile-avatar-wrap">
+        <img id="profileModalAvatar" src="" alt="프로필" class="profile-modal-img" />
+        <button class="avatar-change-btn"><i class="bi bi-camera"></i></button>
+      </div>
+      <div class="field-group"><label class="field-label">이름</label><div class="field-wrap"><i class="bi bi-person field-icon"></i><input id="profileModalName" type="text" class="field-input" /></div></div>
+      <div class="field-group"><label class="field-label">이메일</label><div class="field-wrap"><i class="bi bi-envelope field-icon"></i><input id="profileModalEmail" type="email" class="field-input" readonly style="opacity:.6" /></div></div>
+      <div class="field-group"><label class="field-label">역할</label><div class="field-wrap"><i class="bi bi-shield field-icon"></i><input id="profileModalRole" type="text" class="field-input" readonly style="opacity:.6" /></div></div>
+      <div class="form-actions"><button id="profileSaveBtn" class="btn-submit"><i class="bi bi-check2"></i> 저장</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CALENDAR EVENT MODAL ═══ -->
+<div id="calEventModal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h5 class="modal-box-title" id="calEventModalTitle"><i class="bi bi-calendar-plus"></i> 일정 추가</h5>
+      <button class="modal-close" id="closeCalEvent"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="field-group"><label class="field-label">일정 제목 <span class="req">*</span></label><div class="field-wrap"><i class="bi bi-pencil field-icon"></i><input id="calEventTitle" type="text" class="field-input" placeholder="일정 제목을 입력하세요" /></div></div>
+    <div class="field-group"><label class="field-label">날짜 <span class="req">*</span></label><div class="field-wrap"><i class="bi bi-calendar3 field-icon"></i><input id="calEventDate" type="date" class="field-input" /></div></div>
+    <div class="field-group"><label class="field-label">유형</label>
+      <div class="role-select-group">
+        <label class="role-opt"><input type="radio" name="calType" value="session" checked /> 멘토링 세션</label>
+        <label class="role-opt"><input type="radio" name="calType" value="deadline" /> 과제 마감</label>
+        <label class="role-opt"><input type="radio" name="calType" value="etc" /> 기타</label>
+      </div>
+    </div>
+    <div class="form-actions"><button id="calEventSave" class="btn-submit"><i class="bi bi-check2"></i> 저장</button></div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><i class="bi bi-layers-half"></i></div>
+    <div class="brand-text">
+      <span class="brand-name">MentorHub</span>
+      <span class="brand-sub">프로젝트 관리</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <p class="nav-section-label">메인 메뉴</p>
+    <a href="#" class="sidebar-link active" data-section="dashboard"><span class="link-icon"><i class="bi bi-grid-1x2-fill"></i></span><span class="link-text">대시보드</span></a>
+    <a href="#" class="sidebar-link" data-section="notice"><span class="link-icon"><i class="bi bi-megaphone-fill"></i></span><span class="link-text">공지사항</span><span class="notif-dot" id="sidebarNoticeDot" style="display:none"></span></a>
+    <a href="#" class="sidebar-link" data-section="tasks"><span class="link-icon"><i class="bi bi-kanban-fill"></i></span><span class="link-text">과제 관리</span></a>
+    <a href="#" class="sidebar-link" data-section="skills"><span class="link-icon"><i class="bi bi-bar-chart-line-fill"></i></span><span class="link-text">역량 대시보드</span></a>
+    <p class="nav-section-label" style="margin-top:2rem;">커뮤니티</p>
+    <a href="#" class="sidebar-link" data-section="chat"><span class="link-icon"><i class="bi bi-chat-dots-fill"></i></span><span class="link-text">멘토 채팅</span><span class="chat-unread-dot" id="chatUnreadDot" style="display:none"></span></a>
+    <a href="#" class="sidebar-link" data-section="calendar"><span class="link-icon"><i class="bi bi-calendar3"></i></span><span class="link-text">일정 관리</span></a>
+    <a href="#" class="sidebar-link" data-section="files"><span class="link-icon"><i class="bi bi-folder2-open"></i></span><span class="link-text">자료실</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="mentor-card" id="sidebarUserCard">
+      <img id="sidebarAvatar" src="https://ui-avatars.com/api/?name=User&background=1a56db&color=fff&size=40" alt="사용자" class="mentor-avatar" />
+      <div class="mentor-info">
+        <span class="mentor-name" id="sidebarName">사용자</span>
+        <span class="mentor-role" id="sidebarRole">—</span>
+      </div>
+      <button id="logoutBtn" class="sidebar-logout" title="로그아웃"><i class="bi bi-box-arrow-right"></i></button>
+    </div>
+  </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ════════════════════════════════════════
+     MAIN WRAPPER
+════════════════════════════════════════ -->
+<div class="main-wrapper" id="mainWrapper">
+
+  <!-- HEADER -->
+  <header class="top-header">
+    <div class="header-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      <div class="breadcrumb-area">
+        <span class="page-title" id="pageTitle">대시보드</span>
+        <span class="page-date" id="pageDate"></span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-search">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="검색..." id="searchInput" />
+      </div>
+      <div class="rt-status" id="rtStatus" title="실시간 연결 상태">
+        <span class="rt-dot" id="rtDot"></span>
+        <span class="rt-label" id="rtLabel">시트 확인 중</span>
+      </div>
+      <button class="icon-btn notif-btn" id="notifBtn">
+        <i class="bi bi-bell-fill"></i>
+        <span class="notif-badge" id="notifCount" style="display:none">0</span>
+      </button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header"><span>알림</span><button class="read-all-btn" id="readAllBtn">모두 읽음</button></div>
+        <div class="notif-list" id="notifList"><div class="notif-empty">알림이 없습니다.</div></div>
+      </div>
+      <div class="profile-area" id="profileAreaBtn">
+        <img id="headerAvatar" src="https://ui-avatars.com/api/?name=User&background=e0eaff&color=1a56db&size=36" alt="프로필" class="profile-avatar" />
+        <div class="profile-info">
+          <span class="profile-name" id="headerName">사용자</span>
+          <span class="profile-role" id="headerRole">—</span>
+        </div>
+        <i class="bi bi-chevron-down profile-chevron"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE CONTENT -->
+  <main class="page-content">
+
+    <!-- ══ DASHBOARD ══ -->
+    <section class="content-section active" id="section-dashboard">
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <p class="welcome-greeting" id="welcomeGreeting">안녕하세요 👋</p>
+          <h2 class="welcome-headline">오늘도 성장하는 하루가 되길 바랍니다.</h2>
+        </div>
+        <div class="welcome-stat">
+          <div class="stat-chip"><i class="bi bi-fire"></i><span id="streakText">로딩 중...</span></div>
+        </div>
+      </div>
+      <div class="row g-4 mb-4">
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card" style="--accent:#1a56db">
+            <div class="kpi-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
+            <div class="kpi-body"><p class="kpi-label">진행 중 과제</p><h3 class="kpi-value"><span id="kpiInProgress">—</span><span class="kpi-unit">건</span></h3><p class="kpi-delta" id="kpiInProgressDelta">로딩 중...</p></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card" style="--accent:#0e9f6e">
+            <div class="kpi-icon" style="background:rgba(14,159,110,.12);color:#0e9f6e"><i class="bi bi-patch-check-fill"></i></div>
+            <div class="kpi-body"><p class="kpi-label">완료된 과제</p><h3 class="kpi-value"><span id="kpiDone">—</span><span class="kpi-unit">건</span></h3><p class="kpi-delta up" id="kpiDoneRate" style="color:#0e9f6e">로딩 중...</p></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card" style="--accent:#f05252">
+            <div class="kpi-icon" style="background:rgba(240,82,82,.12);color:#f05252"><i class="bi bi-hourglass-split"></i></div>
+            <div class="kpi-body"><p class="kpi-label">마감 임박</p><h3 class="kpi-value"><span id="kpiDue">—</span><span class="kpi-unit">건</span></h3><p class="kpi-delta down" style="color:#f05252">3일 이내 마감</p></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card" style="--accent:#7e3af2">
+            <div class="kpi-icon" style="background:rgba(126,58,242,.12);color:#7e3af2"><i class="bi bi-trophy-fill"></i></div>
+            <div class="kpi-body"><p class="kpi-label">역량 포인트</p><h3 class="kpi-value"><span id="kpiPoints">—</span><span class="kpi-unit">pt</span></h3><p class="kpi-delta up" style="color:#7e3af2" id="kpiPointsDelta">계산 중...</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-8">
+          <div class="panel">
+            <div class="panel-header">
+              <h5 class="panel-title"><i class="bi bi-kanban"></i> 진행 중인 과제</h5>
+              <a href="#" class="panel-link" data-goto="tasks">전체 보기 <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="panel-body" id="dashTaskList"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel h-100">
+            <div class="panel-header">
+              <h5 class="panel-title"><i class="bi bi-megaphone"></i> 공지사항</h5>
+              <a href="#" class="panel-link" data-goto="notice">전체 보기 <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="panel-body p-0">
+              <div class="notice-list" id="dashNoticeList"><div class="notice-loading"><i class="bi bi-arrow-repeat spin"></i> 불러오는 중...</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-12 col-md-5">
+          <div class="panel">
+            <div class="panel-header"><h5 class="panel-title"><i class="bi bi-hexagon-half"></i> 역량 레이더</h5><span class="badge-period">이번 달</span></div>
+            <div class="panel-body d-flex justify-content-center align-items-center" style="min-height:280px"><canvas id="radarChart" width="320" height="280"></canvas></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-7">
+          <div class="panel">
+            <div class="panel-header"><h5 class="panel-title"><i class="bi bi-bar-chart-line"></i> 월별 과제 완료 추이</h5><span class="badge-period">2025</span></div>
+            <div class="panel-body" style="min-height:280px"><canvas id="barChart" height="260"></canvas></div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="panel">
+            <div class="panel-header"><h5 class="panel-title"><i class="bi bi-lightning-charge-fill"></i> 역량별 달성도</h5><span class="badge-period">누적</span></div>
+            <div class="panel-body">
+              <div class="row g-3">
+                <div class="col-12 col-md-6 col-xl-3"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-code-slash"></i> 프론트엔드</span><span class="skill-bar-pct">82%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#1a56db" data-target="82"></div></div></div></div>
+                <div class="col-12 col-md-6 col-xl-3"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-server"></i> 백엔드</span><span class="skill-bar-pct">61%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#0e9f6e" data-target="61"></div></div></div></div>
+                <div class="col-12 col-md-6 col-xl-3"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-cpu"></i> CS 이론</span><span class="skill-bar-pct">55%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#f05252" data-target="55"></div></div></div></div>
+                <div class="col-12 col-md-6 col-xl-3"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-git"></i> 협업/버전관리</span><span class="skill-bar-pct">78%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#7e3af2" data-target="78"></div></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ NOTICE ══ -->
+    <section class="content-section" id="section-notice">
+      <div class="section-page-header">
+        <div><h3 class="section-page-title"><i class="bi bi-megaphone-fill"></i> 공지사항</h3><p class="section-page-desc">멘토링 프로그램의 주요 공지를 확인하세요.</p></div>
+        <button class="btn-create mentor-only" id="noticeCreateBtn" style="display:none"><i class="bi bi-plus-lg"></i> 공지 작성</button>
+      </div>
+      <div id="noticeForm" class="notice-form-panel" style="display:none">
+        <div class="panel">
+          <div class="panel-header"><h5 class="panel-title"><i class="bi bi-pencil-square"></i> 새 공지 작성</h5><button class="panel-link" id="noticeFormClose">취소</button></div>
+          <div class="panel-body">
+            <div id="noticeFormAlert" class="auth-alert" style="display:none"></div>
+            <div class="field-group"><label class="field-label">제목 <span class="req">*</span></label><input id="noticeTitle" type="text" class="field-input" placeholder="공지 제목" maxlength="100" /><span class="char-count" id="noticeTitleCount">0/100</span></div>
+            <div class="field-group"><label class="field-label">내용 <span class="req">*</span></label><textarea id="noticeContent" class="field-textarea" rows="5" placeholder="공지 내용을 입력하세요"></textarea></div>
+            <div class="field-group d-flex align-items-center gap-3"><label class="toggle-switch"><input type="checkbox" id="noticePinned" /><span class="toggle-slider"></span></label><span class="field-label mb-0">상단 고정</span></div>
+            <div class="form-actions"><button id="noticeSubmitBtn" class="btn-submit"><span id="noticeSubmitText">등록하기</span><span id="noticeSubmitSpinner" style="display:none"><i class="bi bi-arrow-repeat spin"></i></span></button></div>
+          </div>
+        </div>
+      </div>
+      <div id="noticeNewBanner" class="rt-new-banner" style="display:none"><i class="bi bi-arrow-up-circle-fill"></i> 새 공지가 등록되었습니다. <button id="noticeRefreshBtn">지금 보기</button></div>
+      <div class="panel">
+        <div class="panel-body p-0">
+          <table class="notice-table">
+            <thead><tr><th style="width:50px">번호</th><th>제목</th><th style="width:130px">작성자</th><th style="width:110px">날짜</th></tr></thead>
+            <tbody id="noticeTableBody"><tr><td colspan="4" class="table-loading"><i class="bi bi-arrow-repeat spin"></i> 불러오는 중...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ TASKS ══ -->
+    <section class="content-section" id="section-tasks">
+      <div class="section-page-header">
+        <div><h3 class="section-page-title"><i class="bi bi-kanban-fill"></i> 과제 관리</h3><p class="section-page-desc">칸반 보드로 과제 진행 상황을 확인하세요.</p></div>
+        <button class="btn-create mentor-only" id="taskCreateBtn" style="display:none"><i class="bi bi-plus-lg"></i> 과제 등록</button>
+      </div>
+      <div id="taskFeedbackBanner" class="rt-new-banner feedback" style="display:none"><i class="bi bi-chat-quote-fill"></i><span id="taskFeedbackBannerText">새 피드백이 등록되었습니다.</span><button id="taskFeedbackRefresh">확인하기</button></div>
+      <div class="row g-4">
+        <div class="col-12 col-md-4">
+          <div class="kanban-col">
+            <div class="kanban-col-header todo"><span><i class="bi bi-circle"></i> 시작 전</span><span class="kanban-count" id="kanbanCountTodo">0</span></div>
+            <div id="kanbanTodo" class="kanban-drop-zone"><div class="kanban-skeleton"></div><div class="kanban-skeleton"></div></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="kanban-col">
+            <div class="kanban-col-header inprogress"><span><i class="bi bi-arrow-repeat"></i> 진행 중</span><span class="kanban-count" id="kanbanCountInProgress">0</span></div>
+            <div id="kanbanInProgress" class="kanban-drop-zone"></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="kanban-col">
+            <div class="kanban-col-header done"><span><i class="bi bi-check-circle-fill"></i> 완료</span><span class="kanban-count" id="kanbanCountDone">0</span></div>
+            <div id="kanbanDone" class="kanban-drop-zone"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ SKILLS ══ -->
+    <section class="content-section" id="section-skills">
+      <div class="section-page-header">
+        <div><h3 class="section-page-title"><i class="bi bi-bar-chart-line-fill"></i> 역량 대시보드</h3><p class="section-page-desc">누적 역량 및 성장 현황을 확인합니다.</p></div>
+      </div>
+      <div class="row g-4">
+        <div class="col-12 col-md-5">
+          <div class="panel"><div class="panel-header"><h5 class="panel-title"><i class="bi bi-hexagon-half"></i> 역량 레이더</h5></div>
+            <div class="panel-body d-flex justify-content-center" style="min-height:300px"><canvas id="radarChart2" width="340" height="300"></canvas></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-7">
+          <div class="panel"><div class="panel-header"><h5 class="panel-title"><i class="bi bi-lightning-charge-fill"></i> 역량별 달성도</h5></div>
+            <div class="panel-body">
+              <div class="row g-3">
+                <div class="col-12 col-sm-6"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-code-slash"></i> 프론트엔드</span><span class="skill-bar-pct">82%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#1a56db" data-target="82"></div></div></div></div>
+                <div class="col-12 col-sm-6"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-server"></i> 백엔드</span><span class="skill-bar-pct">61%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#0e9f6e" data-target="61"></div></div></div></div>
+                <div class="col-12 col-sm-6"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-cpu"></i> CS 이론</span><span class="skill-bar-pct">55%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#f05252" data-target="55"></div></div></div></div>
+                <div class="col-12 col-sm-6"><div class="skill-bar-card"><div class="skill-bar-header"><span class="skill-bar-label"><i class="bi bi-git"></i> 협업</span><span class="skill-bar-pct">78%</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="width:0%;--sc:#7e3af2" data-target="78"></div></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 성장 타임라인 -->
+        <div class="col-12">
+          <div class="panel">
+            <div class="panel-header"><h5 class="panel-title"><i class="bi bi-activity"></i> 성장 타임라인</h5><span class="badge-period">최근 6주</span></div>
+            <div class="panel-body"><canvas id="lineChart" height="120"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ CHAT ══ -->
+    <section class="content-section" id="section-chat">
+      <div class="section-page-header">
+        <div><h3 class="section-page-title"><i class="bi bi-chat-dots-fill"></i> 멘토 채팅</h3><p class="section-page-desc">멘토와 실시간으로 소통하세요.</p></div>
+      </div>
+      <div class="chat-layout">
+        <!-- 채팅방 목록 -->
+        <div class="chat-sidebar">
+          <div class="chat-search-wrap"><i class="bi bi-search"></i><input type="text" placeholder="대화 검색..." class="chat-search-input" /></div>
+          <div class="chat-room-list">
+            <div class="chat-room active" data-room="mentor">
+              <img src="https://ui-avatars.com/api/?name=Kim+Mentor&background=1a56db&color=fff&size=36" class="chat-room-avatar" />
+              <div class="chat-room-info"><span class="chat-room-name">김태현 멘토</span><span class="chat-room-last">단일 책임 원칙을 기준으로...</span></div>
+              <div class="chat-room-meta"><span class="chat-room-time">10:35</span><span class="chat-room-badge">3</span></div>
+            </div>
+            <div class="chat-room" data-room="group">
+              <div class="chat-room-avatar group-avatar"><i class="bi bi-people-fill"></i></div>
+              <div class="chat-room-info"><span class="chat-room-name">3기 멘티 그룹</span><span class="chat-room-last">박민준: 내일 세션 있나요?</span></div>
+              <div class="chat-room-meta"><span class="chat-room-time">어제</span></div>
+            </div>
+            <div class="chat-room" data-room="ops">
+              <div class="chat-room-avatar ops-avatar"><i class="bi bi-shield-fill"></i></div>
+              <div class="chat-room-info"><span class="chat-room-name">운영팀</span><span class="chat-room-last">6월 일정이 업데이트되었습니다.</span></div>
+              <div class="chat-room-meta"><span class="chat-room-time">06.02</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- 채팅 본문 -->
+        <div class="chat-main">
+          <div class="chat-main-header">
+            <img src="https://ui-avatars.com/api/?name=Kim+Mentor&background=1a56db&color=fff&size=36" class="chat-room-avatar" />
+            <div><span class="chat-main-name">김태현 멘토</span><span class="chat-online"><i class="bi bi-circle-fill"></i> 온라인</span></div>
+          </div>
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-day-label">오늘</div>
+            <div class="chat-msg received"><div class="chat-bubble">안녕하세요! 과제 관련해서 궁금한 점 있으면 언제든지 물어보세요 😊</div><span class="chat-time">10:30</span></div>
+            <div class="chat-msg sent"><div class="chat-bubble">감사합니다! React 컴포넌트 분리할 때 기준이 궁금해요.</div><span class="chat-time">10:32</span></div>
+            <div class="chat-msg received"><div class="chat-bubble">단일 책임 원칙을 기준으로 — 한 컴포넌트가 하나의 역할만 하도록 나누면 됩니다. 재사용 가능한지도 같이 고려해 보세요!</div><span class="chat-time">10:35</span></div>
+          </div>
+          <div class="chat-input-bar">
+            <button class="chat-attach-btn" title="파일 첨부"><i class="bi bi-paperclip"></i></button>
+            <input type="text" id="chatInputMain" class="chat-input-main" placeholder="메시지를 입력하세요..." />
+            <button id="chatSendMain" class="chat-send-main"><i class="bi bi-send-fill"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ CALENDAR ══ -->
+    <section class="content-section" id="section-calendar">
+      <div class="section-page-header">
+        <div><h3 class="section-page-title"><i class="bi bi-calendar3"></i> 일정 관리</h3><p class="section-page-desc">멘토링 세션과 과제 마감일을 관리하세요.</p></div>
+        <button class="btn-create" id="calAddBtn"><i class="bi bi-plus-lg"></i> 일정 추가</button>
+      </div>
+      <div class="row g-4">
+        <div class="col-12 col-lg-8">
+          <div class="panel">
+            <div class="panel-header">
+              <button class="cal-nav-btn" id="calPrev"><i class="bi bi-chevron-left"></i></button>
+              <h5 class="panel-title cal-month-title" id="calMonthTitle">2025년 6월</h5>
+              <button class="cal-nav-btn" id="calNext"><i class="bi bi-chevron-right"></i></button>
+            </div>
+            <div class="panel-body p-0">
+              <div class="cal-grid-header">
+                <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="panel">
+            <div class="panel-header"><h5 class="panel-title"><i class="bi bi-list-check"></i> 예정 일정</h5></div>
+            <div class="panel-body p-0" id="calEventList">
+              <div class="cal-event-item session"><div class="cal-event-dot session"></div><div><p class="cal-event-title">멘토링 세션 #12</p><p class="cal-event-date"><i class="bi bi-clock"></i> 6월 5일 오후 2시</p></div></div>
+              <div class="cal-event-item deadline"><div class="cal-event-dot deadline"></div><div><p class="cal-event-title">React 리팩토링 마감</p><p class="cal-event-date"><i class="bi bi-clock"></i> 6월 7일</p></div></div>
+              <div class="cal-event-item session"><div class="cal-event-dot session"></div><div><p class="cal-event-title">중간 점검 발표</p><p class="cal-event-date"><i class="bi bi-clock"></i> 6월 12일</p></div></div>
+              <div class="cal-event-item etc"><div class="cal-event-dot etc"></div><div><p class="cal-event-title">알고리즘 스터디</p><p class="cal-event-date"><i class="bi bi-clock"></i> 6월 14일</p></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ FILES ══ -->
+    <section class="content-section" id="section-files">
+      <div class="section-page-header">
+        <div><h3 class="section-page-title"><i class="bi bi-folder2-open"></i> 자료실</h3><p class="section-page-desc">멘토링 자료와 과제 파일을 공유합니다.</p></div>
+        <button class="btn-create" id="fileUploadBtn"><i class="bi bi-upload"></i> 파일 업로드</button>
+      </div>
+      <!-- 필터 탭 -->
+      <div class="file-tab-bar">
+        <button class="file-tab active" data-filter="all">전체</button>
+        <button class="file-tab" data-filter="doc">문서</button>
+        <button class="file-tab" data-filter="ppt">발표자료</button>
+        <button class="file-tab" data-filter="code">코드</button>
+        <button class="file-tab" data-filter="etc">기타</button>
+      </div>
+      <div class="panel">
+        <div class="panel-body p-0">
+          <table class="file-table">
+            <thead><tr><th>파일명</th><th style="width:90px">종류</th><th style="width:90px">크기</th><th style="width:110px">업로더</th><th style="width:110px">날짜</th><th style="width:100px">액션</th></tr></thead>
+            <tbody id="fileTableBody">
+              <tr data-type="doc"><td><span class="file-icon doc"><i class="bi bi-file-earmark-word"></i></span> 멘토링_가이드라인_v2.docx</td><td><span class="file-badge doc">문서</span></td><td>1.2 MB</td><td>운영팀</td><td>2025.05.30</td><td><div class="file-actions"><button class="file-btn download" title="다운로드"><i class="bi bi-download"></i></button><button class="file-btn preview" title="미리보기"><i class="bi bi-eye"></i></button></div></td></tr>
+              <tr data-type="ppt"><td><span class="file-icon ppt"><i class="bi bi-file-earmark-ppt"></i></span> 중간점검_발표양식.pptx</td><td><span class="file-badge ppt">발표</span></td><td>3.8 MB</td><td>운영팀</td><td>2025.05.30</td><td><div class="file-actions"><button class="file-btn download" title="다운로드"><i class="bi bi-download"></i></button><button class="file-btn preview" title="미리보기"><i class="bi bi-eye"></i></button></div></td></tr>
+              <tr data-type="code"><td><span class="file-icon code"><i class="bi bi-file-earmark-code"></i></span> react-todo-starter.zip</td><td><span class="file-badge code">코드</span></td><td>512 KB</td><td>김태현 멘토</td><td>2025.05.20</td><td><div class="file-actions"><button class="file-btn download" title="다운로드"><i class="bi bi-download"></i></button></div></td></tr>
+              <tr data-type="doc"><td><span class="file-icon doc"><i class="bi bi-file-earmark-pdf"></i></span> Git_협업가이드.pdf</td><td><span class="file-badge doc">문서</span></td><td>980 KB</td><td>김태현 멘토</td><td>2025.05.15</td><td><div class="file-actions"><button class="file-btn download" title="다운로드"><i class="bi bi-download"></i></button><button class="file-btn preview" title="미리보기"><i class="bi bi-eye"></i></button></div></td></tr>
+              <tr data-type="ppt"><td><span class="file-icon ppt"><i class="bi bi-file-earmark-ppt"></i></span> 깃허브_세미나_녹화.mp4</td><td><span class="file-badge ppt">발표</span></td><td>210 MB</td><td>운영팀</td><td>2025.05.15</td><td><div class="file-actions"><button class="file-btn download" title="다운로드"><i class="bi bi-download"></i></button></div></td></tr>
+              <tr data-type="code"><td><span class="file-icon code"><i class="bi bi-file-earmark-code"></i></span> rest-api-boilerplate.zip</td><td><span class="file-badge code">코드</span></td><td>1.1 MB</td><td>김태현 멘토</td><td>2025.05.10</td><td><div class="file-actions"><button class="file-btn download" title="다운로드"><i class="bi bi-download"></i></button></div></td></tr>
+              <tr data-type="etc"><td><span class="file-icon etc"><i class="bi bi-file-earmark"></i></span> 5월_우수멘티_선정결과.png</td><td><span class="file-badge etc">기타</span></td><td>420 KB</td><td>운영팀</td><td>2025.05.27</td><td><div class="file-actions"><button class="file-btn download" title="다운로드"><i class="bi bi-download"></i></button><button class="file-btn preview" title="미리보기"><i class="bi bi-eye"></i></button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="module">
+/* ═══════════════════════════════════════════════════
+   Google Sheets 데이터 레이어 안전 로드
+   실패(공개 공유 미설정 등)해도 목업 데이터로 표시됨
+══════════════════════════════════════════════════ */
+let Auth, Notices, Assignments, Realtime;
+let GS_OK = false;   // Google Sheets 연결 성공 여부
+
+try {
+  const mod  = await import('./supabase-client.js');
+  Auth        = mod.Auth;
+  Notices     = mod.Notices;
+  Assignments = mod.Assignments;
+  Realtime    = mod.Realtime;
+  GS_OK       = true;
+  console.info('[MentorHub] Google Sheets 연결 성공');
+} catch(err) {
+  console.warn('[MentorHub] Google Sheets 모듈 로드 실패 — 목업 데이터로 실행합니다.', err.message);
+  // ── 오프라인 Stub (목업 데이터 반환) ──
+  Auth = {
+    signIn:            async()=>{ throw new Error('시트 연결 실패 — 파일 공개 공유 설정을 확인하세요.'); },
+    signUp:            async()=>{ throw new Error('시트 연결 실패'); },
+    signOut:           async()=>{},
+    getSession:        async()=>null,
+    getUser:           async()=>null,
+    onAuthStateChange: ()=>()=>{},
+    isMentor:          ()=>false,
+  };
+  Notices = {
+    fetchAll: async()=>MOCK_NOTICES,
+    create:   async()=>{ throw new Error('읽기 전용 — 시트 공개 공유 후 사용 가능합니다.'); },
+    update:   async()=>{ throw new Error('읽기 전용'); },
+    remove:   async()=>{ throw new Error('읽기 전용'); },
+  };
+  Assignments = {
+    fetchMine:    async()=>MOCK_TASKS,
+    fetchAll:     async()=>MOCK_TASKS,
+    updateStatus: async(id,st)=>{ const t=MOCK_TASKS.find(x=>x.id===id); if(t)t.status=st; return t; },
+    saveFeedback: async()=>{ throw new Error('읽기 전용'); },
+    create:       async()=>{ throw new Error('읽기 전용'); },
+  };
+  Realtime = { notices:()=>()=>{}, assignments:()=>()=>{} };
+}
+
+/* ── 목업 데이터 — Google Sheets 공개 공유 전 또는 연결 실패 시 표시 ── */
+const MOCK_NOTICES = [
+  { id:'n1', title:'6월 멘토링 세션 일정 안내', content:'6월 멘토링 세션은 매주 목요일 오후 2시에 진행됩니다.', is_pinned:true,  created_at: new Date(Date.now()-3600000).toISOString(),  profiles:{display_name:'김태현 멘토'} },
+  { id:'n2', title:'중간 점검 발표 자료 양식 공유', content:'발표 자료 양식이 자료실에 업로드되었습니다.', is_pinned:false, created_at: new Date(Date.now()-86400000).toISOString(), profiles:{display_name:'운영팀'} },
+  { id:'n3', title:'5월 우수 멘티 선정 결과 발표', content:'이번 달 우수 멘티로 이수빈 님이 선정되었습니다. 축하합니다!', is_pinned:false, created_at: new Date(Date.now()-3*86400000).toISOString(), profiles:{display_name:'운영팀'} },
+  { id:'n4', title:'코드 리뷰 가이드라인 업데이트', content:'PR 리뷰 시 체크리스트가 업데이트되었습니다. 자료실을 확인해 주세요.', is_pinned:false, created_at: new Date(Date.now()-7*86400000).toISOString(), profiles:{display_name:'김태현 멘토'} },
+  { id:'n5', title:'깃허브 협업 세미나 녹화본 업로드', content:'세미나 녹화본이 자료실에 업로드되었습니다.', is_pinned:false, created_at: new Date(Date.now()-14*86400000).toISOString(), profiles:{display_name:'운영팀'} },
+];
+const MOCK_TASKS = [
+  { id:'t1', title:'React Todo 앱 컴포넌트 분리 리팩토링', description:'', due_date: new Date(Date.now()+3*86400000).toISOString().slice(0,10), status:'in_progress', mentee_id:'guest', feedback:'' },
+  { id:'t2', title:'REST API 설계 및 Swagger 문서화',        description:'', due_date: new Date(Date.now()+7*86400000).toISOString().slice(0,10), status:'in_progress', mentee_id:'guest', feedback:'' },
+  { id:'t3', title:'운영체제 프로세스 & 스레드 정리 발표',  description:'', due_date: new Date(Date.now()+1*86400000).toISOString().slice(0,10), status:'todo',        mentee_id:'guest', feedback:'' },
+  { id:'t4', title:'포트폴리오 사이트 초안 제작',            description:'', due_date: new Date(Date.now()+14*86400000).toISOString().slice(0,10),status:'todo',        mentee_id:'guest', feedback:'' },
+  { id:'t5', title:'Git 브랜치 전략 발표 자료 제작',         description:'', due_date: null,                                                      status:'done',        mentee_id:'guest', feedback:'잘 정리했습니다! PR 템플릿도 함께 만들어보면 좋겠어요.' },
+  { id:'t6', title:'알고리즘 스터디 1주차 문제 풀이',        description:'', due_date: null,                                                      status:'done',        mentee_id:'guest', feedback:'' },
+];
+
+/* ═══════════════════════════════════════
+   전역 상태
+════════════════════════════════════════ */
+let currentUser  = null;
+let isMentor     = false;
+let unsubNotices = null;
+let unsubTasks   = null;
+let allNotices   = [];
+let allTasks     = [];
+let calYear      = new Date().getFullYear();
+let calMonth     = new Date().getMonth();
+let calEvents    = [
+  { date: `${new Date().getFullYear()}-06-05`, title: '멘토링 세션 #12', type: 'session' },
+  { date: `${new Date().getFullYear()}-06-07`, title: 'React 리팩토링 마감', type: 'deadline' },
+  { date: `${new Date().getFullYear()}-06-12`, title: '중간 점검 발표', type: 'session' },
+  { date: `${new Date().getFullYear()}-06-14`, title: '알고리즘 스터디', type: 'etc' },
+];
+
+/* ═══════════════════════════════════════
+   유틸
+════════════════════════════════════════ */
+function showToast(msg, type = 'info') {
+  const icons = { success:'check-circle-fill', error:'x-circle-fill', info:'info-circle-fill', warning:'exclamation-triangle-fill' };
+  const colors = { success:'#0e9f6e', error:'#f05252', info:'#1a56db', warning:'#f59e0b' };
+  const t = document.createElement('div');
+  t.className = 'app-toast';
+  t.style.setProperty('--tc', colors[type] || colors.info);
+  t.innerHTML = `<i class="bi bi-${icons[type]||'info-circle-fill'}"></i><span>${escapeHtml(msg)}</span>`;
+  document.getElementById('toastContainer').appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 350); }, 3200);
+}
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showAlert(id, msg, type='error') { const e=document.getElementById(id); e.className=`auth-alert ${type}`; e.textContent=msg; e.style.display='block'; }
+function hideAlert(id) { document.getElementById(id).style.display='none'; }
+function setLoading(btnId, spId, txId, on, lbl='') {
+  const b=document.getElementById(btnId); if(b) b.disabled=on;
+  const s=document.getElementById(spId);  if(s) s.style.display=on?'':'none';
+  const x=document.getElementById(txId);  if(x&&lbl) x.textContent=lbl;
+}
+function openModal(id) { document.getElementById(id).style.display=''; }
+function closeModal(id) { document.getElementById(id).style.display='none'; }
+function timeAgo(iso) {
+  const d=Date.now()-new Date(iso).getTime(), m=Math.floor(d/60000);
+  if(m<1) return '방금 전'; if(m<60) return m+'분 전';
+  const h=Math.floor(m/60); if(h<24) return h+'시간 전';
+  const dy=Math.floor(h/24); if(dy<7) return dy+'일 전';
+  return new Date(iso).toLocaleDateString('ko-KR');
+}
+function translateAuthError(msg='') {
+  const m=msg.toLowerCase();
+  if(m.includes('invalid login')||m.includes('invalid credentials')) return '이메일 또는 비밀번호가 올바르지 않습니다.';
+  if(m.includes('email not confirmed')) return '이메일 인증이 필요합니다.';
+  if(m.includes('user already registered')) return '이미 등록된 이메일입니다.';
+  if(m.includes('rate limit')) return '잠시 후 다시 시도해 주세요.';
+  return msg || '요청에 실패했습니다.';
+}
+
+/* ═══════════════════════════════════════
+   앱 진입 / 게스트 모드
+════════════════════════════════════════ */
+function showGuestMode() {
+  showApp({ id:'guest', email:'mentee@demo.com', user_metadata:{ display_name:'이수빈', role:'mentee' } });
+}
+
+function showApp(user) {
+  currentUser = user;
+  isMentor = user?.user_metadata?.role === 'mentor';
+  const name = user?.user_metadata?.display_name || user?.email?.split('@')[0] || '사용자';
+  const role = isMentor ? '멘토' : '멘티';
+  const av = `https://ui-avatars.com/api/?name=${encodeURIComponent(name.slice(0,2))}&background=${isMentor?'1a56db':'3b82f6'}&color=fff&size=40`;
+  document.getElementById('sidebarName').textContent = name;
+  document.getElementById('sidebarRole').textContent = role;
+  document.getElementById('sidebarAvatar').src = av;
+  document.getElementById('headerName').textContent = name;
+  document.getElementById('headerRole').textContent = `${role} · 3기`;
+  document.getElementById('headerAvatar').src = av.replace('size=40','size=36');
+  document.getElementById('welcomeGreeting').textContent = `안녕하세요, ${name} 님 👋`;
+  document.getElementById('profileModalAvatar').src = av.replace('size=40','size=80');
+  document.getElementById('profileModalName').value = name;
+  document.getElementById('profileModalEmail').value = user.email||'';
+  document.getElementById('profileModalRole').value = role;
+  // 멘토 전용 버튼
+  document.querySelectorAll('.mentor-only').forEach(el => el.style.display = isMentor ? '' : 'none');
+  document.getElementById('loginScreen').style.display  = 'none';
+  document.getElementById('mainWrapper').style.display  = '';
+  document.getElementById('sidebar').style.display      = '';
+}
+
+/* ═══════════════════════════════════════
+   네비게이션
+════════════════════════════════════════ */
+const sectionTitles = {
+  dashboard:'대시보드', notice:'공지사항', tasks:'과제 관리',
+  skills:'역량 대시보드', chat:'멘토 채팅', calendar:'일정 관리', files:'자료실'
+};
+function activateSection(id) {
+  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  const sec = document.getElementById('section-'+id);
+  if (sec) sec.classList.add('active');
+  const lnk = document.querySelector(`.sidebar-link[data-section="${id}"]`);
+  if (lnk) lnk.classList.add('active');
+  document.getElementById('pageTitle').textContent = sectionTitles[id] || '—';
+  if (window.innerWidth < 992) {
+    document.getElementById('sidebar').classList.remove('collapsed');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
+  if (id==='skills' || id==='dashboard') { animateSkillBars(); }
+  if (id==='calendar') renderCalendar();
+}
+document.querySelectorAll('.sidebar-link[data-section]').forEach(l => {
+  l.addEventListener('click', e => { e.preventDefault(); activateSection(l.dataset.section); });
+});
+document.querySelectorAll('.panel-link[data-goto]').forEach(l => {
+  l.addEventListener('click', e => { e.preventDefault(); activateSection(l.dataset.goto); });
+});
+
+/* ═══════════════════════════════════════
+   사이드바 / 헤더
+════════════════════════════════════════ */
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  sidebar.classList.toggle('collapsed'); overlay.classList.toggle('active');
+});
+overlay.addEventListener('click', () => { sidebar.classList.remove('collapsed'); overlay.classList.remove('active'); });
+document.getElementById('pageDate').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+
+/* 알림 드롭다운 */
+const notifBtn = document.getElementById('notifBtn');
+const notifDD  = document.getElementById('notifDropdown');
+notifBtn.addEventListener('click', e => { e.stopPropagation(); notifDD.classList.toggle('show'); });
+document.addEventListener('click', () => notifDD.classList.remove('show'));
+notifDD.addEventListener('click', e => e.stopPropagation());
+
+const notifications = [];
+function addNotification(title, colorClass, icon) {
+  notifications.unshift({ title, colorClass, icon, time: new Date() });
+  const c = document.getElementById('notifCount'); c.style.display=''; c.textContent=notifications.length;
+  renderNotifications();
+}
+function renderNotifications() {
+  const el = document.getElementById('notifList');
+  el.innerHTML = notifications.length
+    ? notifications.map(n=>`<div class="notif-item unread"><div class="notif-icon ${n.colorClass}"><i class="bi bi-${n.icon}"></i></div><div class="notif-content"><p class="notif-title">${escapeHtml(n.title)}</p><p class="notif-time">${timeAgo(n.time.toISOString())}</p></div></div>`).join('')
+    : '<div class="notif-empty">알림이 없습니다.</div>';
+}
+document.getElementById('readAllBtn').addEventListener('click', () => {
+  notifications.length=0; const c=document.getElementById('notifCount'); c.style.display='none'; c.textContent='0';
+  renderNotifications(); notifDD.classList.remove('show');
+});
+
+/* 프로필 버튼 */
+document.getElementById('profileAreaBtn').addEventListener('click', () => openModal('profileModal'));
+document.getElementById('closeProfile').addEventListener('click', () => closeModal('profileModal'));
+document.getElementById('profileSaveBtn').addEventListener('click', () => { closeModal('profileModal'); showToast('프로필이 저장되었습니다.', 'success'); });
+
+/* 로그아웃 */
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try { await Auth.signOut(); } catch(e) {}
+  showGuestMode(); showToast('로그아웃 되었습니다.', 'info');
+});
+
+/* ═══════════════════════════════════════
+   로그인 폼
+════════════════════════════════════════ */
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPassword').value;
+  hideAlert('loginAlert');
+  if (!email||!pw) { showAlert('loginAlert','이메일과 비밀번호를 입력하세요.'); return; }
+  setLoading('loginBtn','loginSpinner','loginBtnText',true,'로그인 중...');
+  try { const {user}=await Auth.signIn(email,pw); showApp(user); await loadAll(); }
+  catch(e) { showAlert('loginAlert', translateAuthError(e.message)); }
+  finally { setLoading('loginBtn','loginSpinner','loginBtnText',false,'로그인'); }
+});
+document.getElementById('togglePw').addEventListener('click', () => {
+  const i=document.getElementById('loginPassword'), ic=document.querySelector('#togglePw i');
+  i.type=i.type==='password'?'text':'password'; ic.className=i.type==='password'?'bi bi-eye':'bi bi-eye-slash';
+});
+document.querySelectorAll('.demo-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const email=btn.dataset.email, pw=btn.dataset.pw, role=btn.dataset.role, name=role==='mentor'?'김태현':'이수빈';
+    hideAlert('loginAlert');
+    setLoading('loginBtn','loginSpinner','loginBtnText',true,'데모 계정 접속 중...');
+    try { const {user}=await Auth.signIn(email,pw); showApp(user); await loadAll(); }
+    catch {
+      try { await Auth.signUp(email,pw,{data:{display_name:name,role}}); const {user}=await Auth.signIn(email,pw); showApp(user); await loadAll(); }
+      catch(e2) { showAlert('loginAlert', translateAuthError(e2.message), 'info'); }
+    }
+    finally { setLoading('loginBtn','loginSpinner','loginBtnText',false,'로그인'); }
+  });
+});
+document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginBtn').click(); });
+document.getElementById('showSignupBtn').addEventListener('click', () => openModal('signupModal'));
+document.getElementById('closeSignup').addEventListener('click', () => closeModal('signupModal'));
+document.getElementById('signupSubmitBtn').addEventListener('click', async () => {
+  const name=document.getElementById('signupName').value.trim(), email=document.getElementById('signupEmail').value.trim(), pw=document.getElementById('signupPassword').value, role=document.querySelector('input[name="signupRole"]:checked').value;
+  hideAlert('signupAlert');
+  if(!name||!email||!pw){showAlert('signupAlert','모든 필드를 입력하세요.');return;}
+  if(pw.length<8){showAlert('signupAlert','비밀번호는 8자 이상이어야 합니다.');return;}
+  setLoading('signupSubmitBtn','signupSpinner','signupBtnText',true,'가입 중...');
+  try { await Auth.signUp(email,pw,{data:{display_name:name,role}}); showAlert('signupAlert','가입 확인 이메일이 발송되었습니다.','success'); }
+  catch(e) { showAlert('signupAlert',e.message||'가입에 실패했습니다.'); }
+  finally { setLoading('signupSubmitBtn','signupSpinner','signupBtnText',false,'가입하기'); }
+});
+// 모달 바깥 클릭 닫기
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.style.display='none'; });
+});
+
+/* ═══════════════════════════════════════
+   공지사항
+════════════════════════════════════════ */
+function renderNoticeList(notices) {
+  allNotices = notices;
+  const dashEl = document.getElementById('dashNoticeList');
+  if (dashEl) {
+    dashEl.innerHTML = notices.length
+      ? notices.slice(0,5).map(n=>`
+          <div class="notice-item" data-id="${n.id}" role="button">
+            <div class="notice-badge ${n.is_pinned?'new':''}">${n.is_pinned?'PIN':'공지'}</div>
+            <div class="notice-content">
+              <p class="notice-title">${escapeHtml(n.title)}</p>
+              <p class="notice-date"><i class="bi bi-clock"></i> ${timeAgo(n.created_at)}</p>
+            </div>
+          </div>`).join('')
+      : '<div class="notice-empty">공지사항이 없습니다.</div>';
+    dashEl.querySelectorAll('.notice-item[data-id]').forEach(el => el.addEventListener('click', () => openNoticeDetail(el.dataset.id)));
+  }
+  const tbody = document.getElementById('noticeTableBody');
+  if (tbody) {
+    tbody.innerHTML = notices.length
+      ? notices.map((n,i)=>`
+          <tr class="${n.is_pinned?'pinned':''}" data-id="${n.id}" role="button" style="cursor:pointer">
+            <td>${n.is_pinned?'<i class="bi bi-pin-fill text-primary"></i>':notices.length-i}</td>
+            <td>${n.is_pinned?'<span class="new-badge">PIN</span>':''} ${escapeHtml(n.title)}</td>
+            <td>${escapeHtml(n.profiles?.display_name||'—')}</td>
+            <td>${new Date(n.created_at).toLocaleDateString('ko-KR')}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="4" class="table-empty">등록된 공지가 없습니다.</td></tr>';
+    tbody.querySelectorAll('tr[data-id]').forEach(tr => tr.addEventListener('click', () => openNoticeDetail(tr.dataset.id)));
+  }
+}
+function openNoticeDetail(id) {
+  const n = allNotices.find(x=>x.id===id); if(!n) return;
+  document.getElementById('noticeDetailTitle').textContent = n.title;
+  document.getElementById('noticeDetailMeta').innerHTML = `<i class="bi bi-person"></i> ${escapeHtml(n.profiles?.display_name||'—')} &nbsp;·&nbsp; <i class="bi bi-clock"></i> ${new Date(n.created_at).toLocaleString('ko-KR')}`;
+  document.getElementById('noticeDetailBody').textContent = n.content||'(내용 없음)';
+  openModal('noticeDetailModal');
+}
+document.getElementById('closeNoticeDetail').addEventListener('click', () => closeModal('noticeDetailModal'));
+
+async function loadNotices() {
+  try {
+    const n = await Notices.fetchAll(30);
+    renderNoticeList(n);
+  } catch(e) {
+    console.warn('loadNotices fallback:', e.message);
+    renderNoticeList(MOCK_NOTICES);   // 오프라인 목업 표시
+    if (GS_OK) showToast('공지 시트 로드 실패 — 파일을 공개 공유(뷰어) 설정했는지 확인하세요.', 'warning');
+    else showToast('Google Sheets 연결 전 — 목업 데이터를 표시합니다.', 'info');
+  }
+}
+
+document.getElementById('noticeCreateBtn').addEventListener('click', () => {
+  document.getElementById('noticeForm').style.display=''; document.getElementById('noticeTitle').focus();
+});
+document.getElementById('noticeFormClose').addEventListener('click', () => document.getElementById('noticeForm').style.display='none');
+document.getElementById('noticeTitle').addEventListener('input', function(){ document.getElementById('noticeTitleCount').textContent=`${this.value.length}/100`; });
+document.getElementById('noticeSubmitBtn').addEventListener('click', async () => {
+  const title=document.getElementById('noticeTitle').value.trim(), content=document.getElementById('noticeContent').value.trim(), pinned=document.getElementById('noticePinned').checked;
+  hideAlert('noticeFormAlert');
+  if(!title){showAlert('noticeFormAlert','제목을 입력하세요.');return;}
+  if(!content){showAlert('noticeFormAlert','내용을 입력하세요.');return;}
+  setLoading('noticeSubmitBtn','noticeSubmitSpinner','noticeSubmitText',true,'등록 중...');
+  try {
+    await Notices.create({title,content,is_pinned:pinned});
+    showToast('공지사항이 등록되었습니다.','success');
+    document.getElementById('noticeTitle').value=''; document.getElementById('noticeContent').value='';
+    document.getElementById('noticeForm').style.display='none';
+    await loadNotices();
+  } catch(e) { showAlert('noticeFormAlert',e.message||'등록 실패'); }
+  finally { setLoading('noticeSubmitBtn','noticeSubmitSpinner','noticeSubmitText',false,'등록하기'); }
+});
+document.getElementById('noticeRefreshBtn').addEventListener('click', async () => {
+  await loadNotices(); document.getElementById('noticeNewBanner').style.display='none'; document.getElementById('sidebarNoticeDot').style.display='none';
+});
+
+/* ═══════════════════════════════════════
+   과제 (Kanban)
+════════════════════════════════════════ */
+function tagColor(title='') {
+  if(/react|vue|프론트|frontend/i.test(title)) return 'blue';
+  if(/api|서버|backend|백엔드|rest/i.test(title)) return 'green';
+  if(/cs|이론|운영체제|알고리즘/i.test(title)) return 'orange';
+  return 'purple';
+}
+function tagLabel(c) { return {blue:'프론트엔드',green:'백엔드',orange:'CS 이론',purple:'프로젝트'}[c]||'기타'; }
+
+function renderKanbanCard(task) {
+  const dday = task.due_date ? (() => { const d=new Date(task.due_date),t=new Date(); d.setHours(0,0,0,0); t.setHours(0,0,0,0); const diff=Math.round((d-t)/86400000); return diff===0?'D-Day':diff>0?`D-${diff}`:`D+${Math.abs(diff)}`; })() : '';
+  const ddayWarn = dday.startsWith('D-') && parseInt(dday.slice(2))<=3;
+  const c = tagColor(task.title);
+  const prog = {todo:0,in_progress:45,done:100}[task.status]??0;
+  const pc = {todo:'#9ca3af',in_progress:'#1a56db',done:'#0e9f6e'}[task.status]||'#1a56db';
+  const feedbackHtml = task.feedback ? `<div class="task-feedback"><i class="bi bi-chat-quote"></i> ${escapeHtml(task.feedback.slice(0,60))}${task.feedback.length>60?'…':''}</div>` : '';
+  const mentorActions = isMentor && task.status!=='done' ? `<button class="card-action-btn feedback-btn" data-id="${task.id}" data-title="${escapeHtml(task.title)}"><i class="bi bi-chat-quote"></i> 피드백</button>` : '';
+  const statusActions = !isMentor && task.status!=='done'
+    ? `<button class="card-action-btn${task.status==='in_progress'?' done':''}" data-id="${task.id}" data-action="${task.status==='todo'?'in_progress':'done'}">${task.status==='todo'?'시작하기':'완료'}</button>` : '';
+  return `
+    <div class="kanban-card ${task.status==='in_progress'?'active-card':task.status==='done'?'done-card':''}" data-id="${task.id}">
+      <div class="kanban-card-top"><span class="task-tag ${c}">${tagLabel(c)}</span>${dday?`<span class="task-due ${ddayWarn?'warn':''}"><i class="bi bi-calendar3"></i> ${dday}</span>`:''}</div>
+      <p class="kanban-card-title">${escapeHtml(task.title)}</p>
+      <div class="task-progress-wrap"><div class="task-progress-bar"><div class="task-progress-fill" style="width:${prog}%;--c:${pc}"></div></div><span class="task-pct">${prog}%</span></div>
+      ${feedbackHtml}
+      <div class="kanban-card-actions">${mentorActions}${statusActions}</div>
+    </div>`;
+}
+
+function renderKanban(tasks) {
+  allTasks = tasks;
+  const todo=tasks.filter(t=>t.status==='todo'), inp=tasks.filter(t=>t.status==='in_progress'), done=tasks.filter(t=>t.status==='done');
+  document.getElementById('kanbanTodo').innerHTML       = todo.length ? todo.map(renderKanbanCard).join('') : '<div class="kanban-empty">과제 없음</div>';
+  document.getElementById('kanbanInProgress').innerHTML = inp.length  ? inp.map(renderKanbanCard).join('')  : '<div class="kanban-empty">진행 중 과제 없음</div>';
+  document.getElementById('kanbanDone').innerHTML       = done.length ? done.map(renderKanbanCard).join('') : '<div class="kanban-empty">완료 과제 없음</div>';
+  document.getElementById('kanbanCountTodo').textContent       = todo.length;
+  document.getElementById('kanbanCountInProgress').textContent = inp.length;
+  document.getElementById('kanbanCountDone').textContent       = done.length;
+  // 상태 변경
+  document.querySelectorAll('.card-action-btn[data-action]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      try {
+        await Assignments.updateStatus(btn.dataset.id, btn.dataset.action);
+        showToast(btn.dataset.action==='done'?'과제 완료! 🎉':'시작했습니다.','success');
+        await loadAssignments();
+      } catch(err) { showToast('상태 변경 실패: '+err.message,'error'); }
+    });
+  });
+  // 피드백 버튼 (멘토)
+  document.querySelectorAll('.feedback-btn[data-id]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('feedbackTaskTitle').textContent = '과제: ' + btn.dataset.title;
+      document.getElementById('feedbackContent').value = '';
+      document.getElementById('feedbackSubmit').dataset.taskId = btn.dataset.id;
+      openModal('feedbackModal');
+    });
+  });
+  renderDashTasks(inp);
+  updateKPIs(tasks);
+}
+
+function renderDashTasks(tasks) {
+  const el=document.getElementById('dashTaskList'); if(!el) return;
+  el.innerHTML = tasks.length
+    ? tasks.slice(0,4).map(t=>{const dday=t.due_date?(()=>{const d=new Date(t.due_date),tn=new Date();d.setHours(0,0,0,0);tn.setHours(0,0,0,0);const df=Math.round((d-tn)/86400000);return df===0?'D-Day':df>0?`D-${df}`:`D+${Math.abs(df)}`;})():'';const ddw=dday.startsWith('D-')&&parseInt(dday.slice(2))<=3;const c=tagColor(t.title);return`<div class="task-item"><div class="task-meta"><span class="task-tag ${c}">${tagLabel(c)}</span>${dday?`<span class="task-due ${ddw?'warn':''}"><i class="bi bi-calendar3"></i> ${dday}</span>`:''}</div><p class="task-title">${escapeHtml(t.title)}</p><div class="task-progress-wrap"><div class="task-progress-bar"><div class="task-progress-fill" style="width:45%;--c:#1a56db"></div></div><span class="task-pct">45%</span></div></div>`;}).join('')
+    : '<div class="no-tasks">진행 중인 과제가 없습니다.</div>';
+}
+
+function updateKPIs(tasks) {
+  const inp=tasks.filter(t=>t.status==='in_progress').length, done=tasks.filter(t=>t.status==='done').length, total=tasks.length;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const due=tasks.filter(t=>{if(!t.due_date||t.status==='done')return false;const d=new Date(t.due_date);d.setHours(0,0,0,0);return(d-today)/86400000<=3;}).length;
+  document.getElementById('kpiInProgress').textContent=inp;
+  document.getElementById('kpiDone').textContent=done;
+  document.getElementById('kpiDue').textContent=due;
+  document.getElementById('kpiDoneRate').textContent=`총 완료율 ${total?Math.round(done/total*100):0}%`;
+  document.getElementById('kpiInProgressDelta').textContent=`전체 ${total}건 중 진행 중`;
+  const pts=done*200+inp*50;
+  document.getElementById('kpiPoints').textContent=pts.toLocaleString();
+  document.getElementById('kpiPointsDelta').textContent='완료 과제당 200pt';
+  document.getElementById('streakText').textContent=`${done}개 과제 완료`;
+}
+
+async function loadAssignments() {
+  try {
+    const t = isMentor ? await Assignments.fetchAll() : await Assignments.fetchMine();
+    renderKanban(t);
+  } catch(e) {
+    console.warn('loadAssignments fallback:', e.message);
+    renderKanban(MOCK_TASKS);   // 오프라인 목업 표시
+    if (GS_OK) showToast('과제 시트 로드 실패 — 파일을 공개 공유(뷰어) 설정했는지 확인하세요.', 'warning');
+    else showToast('Google Sheets 연결 전 — 목업 데이터를 표시합니다.', 'info');
+  }
+}
+
+/* 과제 등록 (멘토) */
+document.getElementById('taskCreateBtn').addEventListener('click', () => openModal('taskCreateModal'));
+document.getElementById('closeTaskCreate').addEventListener('click', () => closeModal('taskCreateModal'));
+document.getElementById('taskCreateSubmit').addEventListener('click', async () => {
+  const title=document.getElementById('taskCreateTitle').value.trim(), desc=document.getElementById('taskCreateDesc').value.trim(), due=document.getElementById('taskCreateDue').value;
+  hideAlert('taskCreateAlert');
+  if(!title){showAlert('taskCreateAlert','제목을 입력하세요.');return;}
+  setLoading('taskCreateSubmit','taskCreateSpinner','taskCreateText',true,'등록 중...');
+  try {
+    await Assignments.create({title,description:desc,due_date:due||null,status:'todo',mentee_id:currentUser?.id||null});
+    showToast('과제가 등록되었습니다.','success'); closeModal('taskCreateModal');
+    document.getElementById('taskCreateTitle').value=''; document.getElementById('taskCreateDesc').value=''; document.getElementById('taskCreateDue').value='';
+    await loadAssignments();
+  } catch(e) { showAlert('taskCreateAlert',e.message||'등록 실패'); }
+  finally { setLoading('taskCreateSubmit','taskCreateSpinner','taskCreateText',false,'등록하기'); }
+});
+
+/* 피드백 저장 */
+document.getElementById('closeFeedback').addEventListener('click', () => closeModal('feedbackModal'));
+document.getElementById('feedbackSubmit').addEventListener('click', async () => {
+  const id=document.getElementById('feedbackSubmit').dataset.taskId;
+  const content=document.getElementById('feedbackContent').value.trim();
+  if(!content){showToast('피드백 내용을 입력하세요.','warning');return;}
+  const sp=document.getElementById('feedbackSpinner'); sp.style.display='';
+  try {
+    await Assignments.saveFeedback(id,content);
+    showToast('피드백이 저장되었습니다.','success'); closeModal('feedbackModal'); await loadAssignments();
+  } catch(e) { showToast('저장 실패: '+e.message,'error'); }
+  finally { sp.style.display='none'; }
+});
+document.getElementById('taskFeedbackRefresh').addEventListener('click', async () => { await loadAssignments(); document.getElementById('taskFeedbackBanner').style.display='none'; });
+
+/* ═══════════════════════════════════════
+   채팅
+════════════════════════════════════════ */
+function appendChatMsg(text, sent=true) {
+  const msgs=document.getElementById('chatMessages');
+  const now=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  const div=document.createElement('div'); div.className=`chat-msg ${sent?'sent':'received'}`;
+  div.innerHTML=`<div class="chat-bubble">${escapeHtml(text)}</div><span class="chat-time">${now}</span>`;
+  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+}
+function setupChat(inputId, sendId) {
+  const inp=document.getElementById(inputId), btn=document.getElementById(sendId);
+  if(!inp||!btn) return;
+  const send=()=>{ const v=inp.value.trim(); if(!v) return; appendChatMsg(v,true); inp.value=''; setTimeout(()=>appendChatMsg('확인했습니다! 조금 더 살펴볼게요 😊',false),900); };
+  btn.addEventListener('click',send);
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} });
+}
+setupChat('chatInputMain','chatSendMain');
+setupChat('chatInput','chatSendBtn');
+// 채팅방 탭 전환
+document.querySelectorAll('.chat-room').forEach(r => {
+  r.addEventListener('click', () => { document.querySelectorAll('.chat-room').forEach(x=>x.classList.remove('active')); r.classList.add('active'); });
+});
+
+/* ═══════════════════════════════════════
+   캘린더
+════════════════════════════════════════ */
+function renderCalendar() {
+  const title=document.getElementById('calMonthTitle'), grid=document.getElementById('calGrid');
+  if(!title||!grid) return;
+  const yr=calYear, mo=calMonth;
+  title.textContent=`${yr}년 ${mo+1}월`;
+  const first=new Date(yr,mo,1).getDay(), days=new Date(yr,mo+1,0).getDate();
+  const today=new Date(); today.setHours(0,0,0,0);
+  let html='';
+  for(let i=0;i<first;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const dateStr=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=new Date(dateStr).getTime()===today.getTime();
+    const evs=calEvents.filter(e=>e.date===dateStr);
+    html+=`<div class="cal-day${isToday?' today':''}" data-date="${dateStr}">
+      <span class="cal-day-num">${d}</span>
+      ${evs.map(e=>`<div class="cal-ev-dot ${e.type}" title="${escapeHtml(e.title)}"></div>`).join('')}
+    </div>`;
+  }
+  grid.innerHTML=html;
+  grid.querySelectorAll('.cal-day[data-date]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      document.getElementById('calEventDate').value=el.dataset.date;
+      document.getElementById('calEventModalTitle').innerHTML='<i class="bi bi-calendar-plus"></i> 일정 추가 — '+el.dataset.date;
+      openModal('calEventModal');
+    });
+  });
+}
+document.getElementById('calPrev').addEventListener('click',()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
+document.getElementById('calNext').addEventListener('click',()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); });
+document.getElementById('calAddBtn').addEventListener('click',()=>{ document.getElementById('calEventDate').value=''; openModal('calEventModal'); });
+document.getElementById('closeCalEvent').addEventListener('click',()=>closeModal('calEventModal'));
+document.getElementById('calEventSave').addEventListener('click',()=>{
+  const t=document.getElementById('calEventTitle').value.trim(), d=document.getElementById('calEventDate').value, tp=document.querySelector('input[name="calType"]:checked').value;
+  if(!t||!d){showToast('제목과 날짜를 입력하세요.','warning');return;}
+  calEvents.push({date:d,title:t,type:tp});
+  closeModal('calEventModal'); renderCalendar();
+  // 예정 일정 목록 업데이트
+  const list=document.getElementById('calEventList');
+  const newItem=document.createElement('div'); newItem.className=`cal-event-item ${tp}`;
+  newItem.innerHTML=`<div class="cal-event-dot ${tp}"></div><div><p class="cal-event-title">${escapeHtml(t)}</p><p class="cal-event-date"><i class="bi bi-clock"></i> ${d}</p></div>`;
+  list.appendChild(newItem);
+  showToast('일정이 추가되었습니다.','success');
+  document.getElementById('calEventTitle').value='';
+});
+
+/* ═══════════════════════════════════════
+   자료실
+════════════════════════════════════════ */
+document.getElementById('fileUploadBtn').addEventListener('click', () => openModal('fileUploadModal'));
+document.getElementById('closeFileUpload').addEventListener('click', () => closeModal('fileUploadModal'));
+
+// 파일 탭 필터
+document.querySelectorAll('.file-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.file-tab').forEach(t=>t.classList.remove('active')); tab.classList.add('active');
+    const filter=tab.dataset.filter;
+    document.querySelectorAll('#fileTableBody tr').forEach(tr => {
+      tr.style.display=(filter==='all'||tr.dataset.type===filter)?'':'none';
+    });
+  });
+});
+
+// 파일 다운로드 / 미리보기 버튼
+document.getElementById('fileTableBody').addEventListener('click', e => {
+  const dl=e.target.closest('.file-btn.download'), pv=e.target.closest('.file-btn.preview');
+  const row=e.target.closest('tr');
+  const fname=row?.querySelector('td:first-child')?.textContent?.trim();
+  if(dl) { showToast(`"${fname}" 다운로드가 시작됩니다.`,'info'); }
+  if(pv) { showToast(`"${fname}" 미리보기는 실제 파일 연동 후 사용 가능합니다.`,'warning'); }
+});
+
+// 드래그앤드롭 업로드
+const dropZone=document.getElementById('uploadDropZone'), fileInput=document.getElementById('fileInput');
+if(dropZone){
+  dropZone.addEventListener('click',()=>fileInput.click());
+  dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover');});
+  dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');handleFiles(e.dataTransfer.files);});
+  fileInput.addEventListener('change',()=>handleFiles(fileInput.files));
+}
+function handleFiles(files) {
+  const list=document.getElementById('uploadFileList'), confirmBtn=document.getElementById('uploadConfirmBtn');
+  list.style.display=''; list.innerHTML='';
+  Array.from(files).forEach(f=>{
+    const item=document.createElement('div'); item.className='upload-file-item';
+    item.innerHTML=`<i class="bi bi-file-earmark-arrow-up"></i><span>${escapeHtml(f.name)}</span><span class="upload-file-size">${(f.size/1024).toFixed(1)} KB</span>`;
+    list.appendChild(item);
+  });
+  confirmBtn.disabled=false;
+}
+document.getElementById('uploadConfirmBtn').addEventListener('click', () => {
+  showToast('파일이 업로드되었습니다.','success'); closeModal('fileUploadModal');
+  document.getElementById('uploadFileList').style.display='none';
+  document.getElementById('uploadConfirmBtn').disabled=true;
+});
+
+/* ═══════════════════════════════════════
+   검색
+════════════════════════════════════════ */
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q=this.value.trim().toLowerCase(); if(!q) return;
+  const found=allNotices.find(n=>n.title.toLowerCase().includes(q)||n.content?.toLowerCase().includes(q));
+  if(found){activateSection('notice');}
+  else {
+    const ft=allTasks.find(t=>t.title.toLowerCase().includes(q));
+    if(ft) activateSection('tasks');
+  }
+});
+
+/* ═══════════════════════════════════════
+   Realtime
+════════════════════════════════════════ */
+function setupRealtime() {
+  const dot=document.getElementById('rtDot'), lbl=document.getElementById('rtLabel');
+  if (!GS_OK) { dot.className='rt-dot error'; lbl.textContent='시트 미연결'; return; }
+  unsubNotices=Realtime.notices(async (ev,row)=>{
+    dot.className='rt-dot connected'; lbl.textContent='실시간 연결';
+    addNotification('새 공지: '+row.title,'green','megaphone');
+    document.getElementById('sidebarNoticeDot').style.display='';
+    document.getElementById('noticeNewBanner').style.display='';
+    if(document.getElementById('section-notice').classList.contains('active')) { await loadNotices(); document.getElementById('noticeNewBanner').style.display='none'; }
+  });
+  if(!isMentor&&currentUser?.id&&currentUser.id!=='guest') {
+    unsubTasks=Realtime.assignments(currentUser.id,async(ev,row)=>{
+      dot.className='rt-dot connected'; lbl.textContent='실시간 연결';
+      if(row.feedback){ addNotification('피드백: '+row.title,'blue','chat-quote'); document.getElementById('taskFeedbackBanner').style.display=''; showToast('새 피드백이 등록되었습니다.','info'); }
+      await loadAssignments();
+    });
+  }
+}
+
+/* ═══════════════════════════════════════
+   스킬 바 애니메이션
+════════════════════════════════════════ */
+function animateSkillBars() {
+  document.querySelectorAll('.skill-bar-fill').forEach(bar => {
+    requestAnimationFrame(()=>setTimeout(()=>{bar.style.width=bar.dataset.target+'%';},200));
+  });
+}
+new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)animateSkillBars();});},{threshold:0.2})
+  .observe(document.querySelector('.skill-bar-card')||document.body);
+
+/* ═══════════════════════════════════════
+   차트
+════════════════════════════════════════ */
+function initCharts() {
+  const radarData={labels:['프론트엔드','백엔드','CS 이론','협업','문서화','발표력'],datasets:[{label:'나의 역량',data:[82,61,55,78,70,65],backgroundColor:'rgba(26,86,219,0.15)',borderColor:'#1a56db',borderWidth:2,pointBackgroundColor:'#1a56db',pointBorderColor:'#fff',pointRadius:5},{label:'멘티 평균',data:[60,55,50,65,58,52],backgroundColor:'rgba(14,159,110,0.08)',borderColor:'rgba(14,159,110,0.5)',borderWidth:1.5,pointBackgroundColor:'#0e9f6e',pointBorderColor:'#fff',pointRadius:4}]};
+  const radarOpts={responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(26,86,219,0.08)'},angleLines:{color:'rgba(26,86,219,0.1)'},pointLabels:{font:{family:'Pretendard,sans-serif',size:12},color:'#374151'}}},plugins:{legend:{position:'bottom',labels:{font:{family:'Pretendard,sans-serif',size:12},boxWidth:12,padding:16}}}};
+  new Chart(document.getElementById('radarChart').getContext('2d'),{type:'radar',data:radarData,options:radarOpts});
+  const rc2=document.getElementById('radarChart2'); if(rc2) new Chart(rc2.getContext('2d'),{type:'radar',data:radarData,options:radarOpts});
+  new Chart(document.getElementById('barChart').getContext('2d'),{type:'bar',data:{labels:['1월','2월','3월','4월','5월','6월'],datasets:[{label:'완료',data:[2,3,4,5,6,2],backgroundColor:'rgba(26,86,219,0.85)',borderRadius:6,borderSkipped:false},{label:'진행 중',data:[1,2,1,2,3,4],backgroundColor:'rgba(26,86,219,0.18)',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{font:{family:'Pretendard,sans-serif',size:12}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{stepSize:2,font:{family:'Pretendard,sans-serif',size:12}}}},plugins:{legend:{position:'bottom',labels:{font:{family:'Pretendard,sans-serif',size:12},boxWidth:12,padding:16}}}}});
+  const lc=document.getElementById('lineChart'); if(lc) new Chart(lc.getContext('2d'),{type:'line',data:{labels:['1주차','2주차','3주차','4주차','5주차','6주차'],datasets:[{label:'역량점수',data:[60,65,68,72,76,82],borderColor:'#1a56db',backgroundColor:'rgba(26,86,219,0.08)',borderWidth:2,fill:true,tension:0.4,pointBackgroundColor:'#1a56db',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{grid:{display:false},ticks:{font:{family:'Pretendard,sans-serif',size:12}}},y:{min:40,max:100,grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{family:'Pretendard,sans-serif',size:12}}}},plugins:{legend:{position:'bottom',labels:{font:{family:'Pretendard,sans-serif',size:12},boxWidth:12,padding:16}}}}});
+}
+initCharts();
+
+/* ═══════════════════════════════════════
+   전체 로드
+════════════════════════════════════════ */
+async function loadAll() {
+  setupRealtime();
+  await Promise.all([loadNotices(), loadAssignments()]);
+  animateSkillBars();
+  renderCalendar();
+}
+
+/* ═══════════════════════════════════════
+   초기 진입
+════════════════════════════════════════ */
+(async () => {
+  try {
+    const session = await Auth.getSession();
+    if (session) { showApp(session.user); }
+    else { showGuestMode(); }
+  } catch(e) {
+    console.warn('세션 확인 실패, 게스트 모드 진입:', e.message);
+    showGuestMode();
+  }
+  await loadAll();
+})();
+
+Auth.onAuthStateChange(async (event, session) => {
+  if (session?.user && !currentUser) { showApp(session.user); await loadAll(); }
+});
+</script>
+</body>
+</html>
